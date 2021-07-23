@@ -42,6 +42,7 @@ members = [
     "runtime/projects",
     "ui",
     "util",
+    "util/package"
 ]
 
 [lib]
