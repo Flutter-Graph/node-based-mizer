@@ -12,4 +12,4 @@ build-headless:
 build:
 	cd ui && flutter pub get
 	cargo build --release --all-features
-	cargo build --release -p mizer-package
+	cargo build -vv --release -p mizer-package
