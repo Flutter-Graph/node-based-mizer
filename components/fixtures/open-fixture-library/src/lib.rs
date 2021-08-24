@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
 use mizer_fixtures::fixture::*;
 use mizer_fixtures::library::FixtureLibraryProvider;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct OpenFixtureLibraryProvider {
@@ -113,6 +115,8 @@ pub struct FixtureManufacturer {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Channel {
+    #[serde(default)]
+    pub fine_channel_aliases: Vec<String>,
     pub default_value: Option<Value>,
     pub capabilities: Vec<Capability>,
 }
@@ -266,15 +270,73 @@ impl From<OpenFixtureLibraryFixtureDefinition> for FixtureDefinition {
                 .into_iter()
                 .map(|mode| {
                     let channels = mode.channels.into_iter().flatten().collect::<Vec<_>>();
+                    let channels_2 = channels.clone();
                     FixtureMode {
                         name: mode.name,
                         groups: group_channels(&available_channels, &channels),
+                        controls: group_controls(&available_channels, &channels),
                         channels: channels
                             .into_iter()
                             .enumerate()
-                            .map(|(i, channel)| FixtureChannelDefinition {
-                                name: channel,
-                                resolution: ChannelResolution::Coarse(i as u8),
+                            .map(|(i, channel)| {
+                                let fine_channels = available_channels
+                                    .get(&channel)
+                                    .map(|c| &c.fine_channel_aliases[..]);
+                                match fine_channels {
+                                    Some(&[ref fine]) => {
+                                        let fine_channel =
+                                            channels_2.iter().position(|c| c == fine);
+                                        if let Some(fine_channel) = fine_channel {
+                                            FixtureChannelDefinition {
+                                                name: channel,
+                                                resolution: ChannelResolution::Fine(
+                                                    i as u8,
+                                                    fine_channel as u8,
+                                                ),
+                                            }
+                                        } else {
+                                            FixtureChannelDefinition {
+                                                name: channel,
+                                                resolution: ChannelResolution::Coarse(i as u8),
+                                            }
+                                        }
+                                    }
+                                    Some(&[ref fine, ref finest]) => {
+                                        let fine_channel =
+                                            channels_2.iter().position(|c| c == fine);
+                                        let finest_channel =
+                                            channels_2.iter().position(|c| c == fine);
+                                        if let Some(fine_channel) = fine_channel {
+                                            if let Some(finest_channel) = finest_channel {
+                                                FixtureChannelDefinition {
+                                                    name: channel,
+                                                    resolution: ChannelResolution::Finest(
+                                                        i as u8,
+                                                        fine_channel as u8,
+                                                        finest_channel as u8,
+                                                    ),
+                                                }
+                                            } else {
+                                                FixtureChannelDefinition {
+                                                    name: channel,
+                                                    resolution: ChannelResolution::Fine(
+                                                        i as u8,
+                                                        fine_channel as u8,
+                                                    ),
+                                                }
+                                            }
+                                        } else {
+                                            FixtureChannelDefinition {
+                                                name: channel,
+                                                resolution: ChannelResolution::Coarse(i as u8),
+                                            }
+                                        }
+                                    }
+                                    _ => FixtureChannelDefinition {
+                                        name: channel,
+                                        resolution: ChannelResolution::Coarse(i as u8),
+                                    },
+                                }
                             })
                             .collect(),
                     }
@@ -313,22 +375,90 @@ fn group_channels(
         })
         .collect::<Vec<_>>();
 
-    log::debug!("{:?}", channels);
+    log::trace!("{:?}", channels);
 
     let mut color_group = ColorGroupBuilder::new();
     let mut groups = Vec::new();
 
     for (name, channel) in channels {
-        match channel.capabilities.first() {
+        if channel
+            .capabilities
+            .iter()
+            .all(|c| matches!(c, Capability::NoFunction))
+        {
+            log::trace!("skipping capability {} as it has no functions", name);
+            continue;
+        }
+        match channel
+            .capabilities
+            .iter()
+            .find(|c| !matches!(c, Capability::NoFunction))
+        {
             Some(Capability::ColorIntensity { color }) if color == "#ff0000" => {
                 color_group.red(name.clone());
-            },
+            }
             Some(Capability::ColorIntensity { color }) if color == "#00ff00" => {
                 color_group.green(name.clone());
-            },
+            }
             Some(Capability::ColorIntensity { color }) if color == "#0000ff" => {
                 color_group.blue(name.clone());
-            },
+            }
+            Some(Capability::Pan {
+                angle_start,
+                angle_end,
+            }) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Pan(AxisGroup {
+                    channel: name.clone(),
+                    angle: Some(Angle {
+                        from: *angle_start,
+                        to: *angle_end,
+                    }),
+                }),
+            }),
+            Some(Capability::Tilt {
+                angle_start,
+                angle_end,
+            }) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Tilt(AxisGroup {
+                    channel: name.clone(),
+                    angle: Some(Angle {
+                        from: *angle_start,
+                        to: *angle_end,
+                    }),
+                }),
+            }),
+            Some(Capability::Focus) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Focus(name.clone()),
+            }),
+            Some(Capability::Zoom) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Zoom(name.clone()),
+            }),
+            Some(Capability::Prism | Capability::PrismRotation) => {
+                groups.push(FixtureChannelGroup {
+                    name: name.clone(),
+                    group_type: FixtureChannelGroupType::Prism(name.clone()),
+                })
+            }
+            Some(Capability::Iris) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Iris(name.clone()),
+            }),
+            Some(Capability::Frost) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Frost(name.clone()),
+            }),
+            Some(Capability::Intensity) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Intensity(name.clone()),
+            }),
+            Some(Capability::ShutterStrobe { .. }) => groups.push(FixtureChannelGroup {
+                name: name.clone(),
+                group_type: FixtureChannelGroupType::Shutter(name.clone()),
+            }),
             Some(_) => groups.push(FixtureChannelGroup {
                 name: name.clone(),
                 group_type: FixtureChannelGroupType::Generic(name.clone()),
@@ -344,9 +474,106 @@ fn group_channels(
         });
     }
 
-    log::debug!("in: {:?}, out: {:?}", enabled_channels, groups);
+    log::trace!("in: {:?}, out: {:?}", enabled_channels, groups);
 
     groups
+}
+
+fn group_controls(
+    available_channels: &HashMap<String, Channel>,
+    enabled_channels: &[String],
+) -> FixtureControls {
+    let channels = enabled_channels
+        .iter()
+        .filter_map(|name| {
+            available_channels
+                .get(name)
+                .map(|channel| (name.clone(), channel))
+        })
+        .collect::<Vec<_>>();
+
+    let mut color_group = ColorGroupBuilder::new();
+    let mut controls = FixtureControls::default();
+
+    for (name, channel) in channels {
+        if channel
+            .capabilities
+            .iter()
+            .all(|c| matches!(c, Capability::NoFunction))
+        {
+            log::trace!("skipping capability {} as it has no functions", name);
+            continue;
+        }
+        match channel
+            .capabilities
+            .iter()
+            .find(|c| !matches!(c, Capability::NoFunction))
+        {
+            Some(Capability::Intensity) => {
+                controls.intensity = Some(name);
+            },
+            Some(Capability::ColorIntensity { color }) if color == "#ff0000" => {
+                color_group.red(name.clone());
+            }
+            Some(Capability::ColorIntensity { color }) if color == "#00ff00" => {
+                color_group.green(name.clone());
+            }
+            Some(Capability::ColorIntensity { color }) if color == "#0000ff" => {
+                color_group.blue(name.clone());
+            }
+            Some(Capability::Pan {
+                angle_start,
+                angle_end,
+            }) => {
+                controls.pan = Some(AxisGroup {
+                    channel: name,
+                    angle: Some(Angle {
+                        from: *angle_start,
+                        to: *angle_end,
+                    }),
+                })
+            }
+            Some(Capability::Tilt {
+                angle_start,
+                angle_end,
+            }) => {
+                controls.tilt = Some(AxisGroup {
+                    channel: name.clone(),
+                    angle: Some(Angle {
+                        from: *angle_start,
+                        to: *angle_end,
+                    }),
+                })
+            }
+            Some(Capability::Focus) => {
+                controls.focus = Some(name);
+            },
+            Some(Capability::Zoom) => {
+                controls.zoom = Some(name);
+            },
+            Some(Capability::Prism) => {
+                controls.prism = Some(name);
+            },
+            Some(Capability::Iris) => {
+                controls.iris = Some(name);
+            },
+            Some(Capability::Frost) => {
+                controls.frost = Some(name);
+            },
+            Some(Capability::ShutterStrobe { .. }) => {
+                controls.shutter = Some(name);
+            },
+            Some(_) => controls.generic.push(GenericControl {
+                label: name.clone(),
+                channel: name,
+            }),
+            _ => {}
+        }
+    }
+
+    controls.color = color_group.build();
+
+    controls
 }
 
 #[derive(Default)]
@@ -383,20 +610,23 @@ impl ColorGroupBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::group_channels;
-    use crate::{Capability, Channel};
-    use mizer_fixtures::fixture::{ColorGroup, FixtureChannelGroup, FixtureChannelGroupType};
     use std::collections::HashMap;
+
+    use mizer_fixtures::fixture::{ColorGroup, FixtureChannelGroup, FixtureChannelGroupType};
+
+    use crate::{Capability, Channel};
+
+    use super::group_channels;
 
     // TODO: reenable when color support in ui is working properly
     #[test]
-    #[ignore]
     fn group_channels_should_group_color_channels() {
         let enabled_channels: Vec<String> = vec!["Red".into(), "Green".into(), "Blue".into()];
         let mut available_channels = HashMap::new();
         available_channels.insert(
             "Red".into(),
             Channel {
+                fine_channel_aliases: Vec::default(),
                 default_value: None,
                 capabilities: vec![Capability::ColorIntensity {
                     color: "#ff0000".into(),
@@ -406,6 +636,7 @@ mod tests {
         available_channels.insert(
             "Green".into(),
             Channel {
+                fine_channel_aliases: Vec::default(),
                 default_value: None,
                 capabilities: vec![Capability::ColorIntensity {
                     color: "#00ff00".into(),
@@ -415,6 +646,7 @@ mod tests {
         available_channels.insert(
             "Blue".into(),
             Channel {
+                fine_channel_aliases: Vec::default(),
                 default_value: None,
                 capabilities: vec![Capability::ColorIntensity {
                     color: "#0000ff".into(),
@@ -454,6 +686,7 @@ mod tests {
         available_channels.insert(
             "Channel".into(),
             Channel {
+                fine_channel_aliases: Vec::default(),
                 default_value: None,
                 capabilities: vec![Capability::Generic],
             },

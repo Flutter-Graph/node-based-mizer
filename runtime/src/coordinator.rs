@@ -338,9 +338,13 @@ impl<TClock: Clock> Runtime for CoordinatorRuntime<TClock> {
         self.processors.push(processor);
     }
 
+    #[profiling::function]
     fn process(&mut self) {
         if let Err(err) = self.clock_sender.send(self.clock.snapshot()) {
             log::error!("Could not send clock snapshot {:?}", err);
+        }
+        for processor in self.processors.iter() {
+            processor.pre_process(&self.injector);
         }
         self.process_pipeline();
         for processor in self.processors.iter() {

@@ -12,6 +12,7 @@ class Panel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: Colors.grey.shade800, width: 2)),
@@ -43,8 +44,9 @@ class PanelAction {
   final String label;
   final Function() onClick;
   final bool disabled;
+  final bool activated;
 
-  PanelAction({this.label, this.onClick, this.disabled});
+  PanelAction({this.label, this.onClick, this.disabled, this.activated = false});
 }
 
 class PanelActions extends StatelessWidget {
@@ -61,13 +63,13 @@ class PanelActions extends StatelessWidget {
       children: actions
           .map((a) => Hoverable(
                 disabled: a.disabled,
-                onClick: a.onClick,
+                onTap: a.onClick,
                 builder: (hovered) => Container(
-                  color: _getColor(a, hovered),
+                  color: _getBackground(a, hovered),
                   height: 64,
                   width: 64,
                   child: Center(
-                    child: Text(a.label, style: textTheme.subtitle2.copyWith(fontSize: 10)),
+                    child: Text(a.label, style: textTheme.subtitle2.copyWith(fontSize: 10, color: _getColor(a))),
                   ),
                 ),
               ))
@@ -75,13 +77,20 @@ class PanelActions extends StatelessWidget {
     );
   }
 
-  Color _getColor(PanelAction action, bool hovered) {
+  Color _getBackground(PanelAction action, bool hovered) {
     if (action.disabled == true) {
-      return Colors.grey.shade900;
+      return Colors.grey.shade800.withAlpha(128);
     }
-    if (hovered) {
+    if (action.activated || hovered) {
       return Colors.grey.shade700;
     }
     return Colors.grey.shade800;
+  }
+
+  Color _getColor(PanelAction action) {
+    if (action.disabled == true) {
+      return Colors.white54;
+    }
+    return Colors.white;
   }
 }

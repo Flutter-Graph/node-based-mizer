@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package mizer.programmer;
+
+import "fixtures.proto";
+
+service ProgrammerApi {
+  rpc SubscribeToProgrammer (SubscribeProgrammerRequest) returns (stream ProgrammerState) {}
+  rpc WriteControl (WriteControlRequest) returns (WriteControlResponse) {}
+  rpc SelectFixtures (SelectFixturesRequest) returns (SelectFixturesResponse) {}
+  rpc Clear (ClearRequest) returns (ClearResponse) {}
+  rpc Highlight (HighlightRequest) returns (HighlightResponse) {}
+  rpc Store (StoreRequest) returns (StoreResponse) {}
+}
+
+message SubscribeProgrammerRequest {}
+
+message ProgrammerState {
+  repeated uint32 fixtures = 1;
+}
+
+message WriteControlRequest {
+  mizer.fixtures.FixtureControl control = 1;
+  oneof value {
+    double fader = 2;
+    mizer.fixtures.ColorChannel color = 3;
+    GenericValue generic = 4;
+  }
+
+  message GenericValue {
+    string name = 1;
+    double value = 2;
+  }
+}
+
+message WriteControlResponse {}
+
+message SelectFixturesRequest {
+  repeated uint32 fixtures = 1;
+}
+
+message SelectFixturesResponse {}
+
+message ClearRequest {}
+message ClearResponse {}
+
+message HighlightRequest {
+  bool highlight = 1;
+}
+
+message HighlightResponse {}
+
+message StoreRequest {
+  uint32 sequence_id = 1;
+  Mode store_mode = 2;
+
+  enum Mode {
+    Overwrite = 0;
+    Merge = 1;
+    AddCue = 2;
+  }
+}
+message StoreResponse {}

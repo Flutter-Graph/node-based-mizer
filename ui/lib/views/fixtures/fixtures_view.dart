@@ -1,13 +1,13 @@
-import 'dart:developer';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mizer/api/contracts/fixtures.dart';
+import 'package:mizer/api/contracts/programmer.dart';
 import 'package:mizer/protos/fixtures.pb.dart';
 import 'package:mizer/state/fixtures_bloc.dart';
 import 'package:mizer/views/fixtures/patch_fixture_dialog.dart';
 import 'package:mizer/widgets/panel.dart';
+import 'package:mizer/widgets/table/table.dart';
 
 import 'fixture_sheet.dart';
 
@@ -29,6 +29,7 @@ class _FixturesViewState extends State<FixturesView> {
     FixturesBloc fixturesBloc = context.read();
     fixturesBloc.add(FetchFixtures());
     var fixturesApi = context.read<FixturesApi>();
+    var programmerApi = context.read<ProgrammerApi>();
     return BlocBuilder<FixturesBloc, Fixtures>(builder: (context, fixtures) {
       return Column(
         children: [
@@ -38,15 +39,21 @@ class _FixturesViewState extends State<FixturesView> {
               child: FixtureTable(
                   fixtures: fixtures.fixtures,
                   selectedIds: selectedIds,
-                  onSelect: (id, selected) {
-                    setState(() {
-                      log("$id => $selected");
-                      if (selected) {
-                        this.selectedIds.add(id);
-                      } else {
-                        this.selectedIds.remove(id);
-                      }
-                    });
+                  // TODO: use setSelectedIds instead of manually calling programmerApi
+                  onSelect: (id, selected) => setState(() {
+                        if (selected) {
+                          this.selectedIds.add(id);
+                        } else {
+                          this.selectedIds.remove(id);
+                        }
+                        programmerApi.selectFixtures(this.selectedIds);
+                      }),
+                  onSelectSimilar: (fixture) {
+                    _setSelectedIds(fixtures.fixtures
+                        .where((f) =>
+                    f.manufacturer == fixture.manufacturer && f.name == fixture.name)
+                        .map((f) => f.id)
+                        .toList());
                   }),
               actions: [
                 PanelAction(
@@ -59,13 +66,12 @@ class _FixturesViewState extends State<FixturesView> {
               ],
             ),
           ),
-          if (selectedIds.isNotEmpty)
-            SizedBox(
-              height: SHEET_CONTAINER_HEIGHT,
-              child: FixtureSheet(
-                  fixtures: fixtures.fixtures.where((f) => selectedIds.contains(f.id)).toList(),
-                  api: fixturesApi),
-            ),
+          SizedBox(
+            height: SHEET_CONTAINER_HEIGHT,
+            child: FixtureSheet(
+                fixtures: fixtures.fixtures.where((f) => selectedIds.contains(f.id)).toList(),
+                api: programmerApi),
+          ),
         ],
       );
     });
@@ -83,25 +89,26 @@ class _FixturesViewState extends State<FixturesView> {
   }
 
   _selectAll(List<Fixture> fixtures) {
-    setState(() {
-      selectedIds = fixtures.map((f) => f.id).toList();
-    });
+    _setSelectedIds(fixtures.map((f) => f.id).toList());
   }
 
   _selectEven(List<Fixture> fixtures) {
-    setState(() {
-      selectedIds = fixtures.map((f) => f.id).where((id) => id.isEven).toList();
-    });
+    _setSelectedIds(fixtures.map((f) => f.id).where((id) => id.isEven).toList());
   }
 
   _selectOdd(List<Fixture> fixtures) {
-    setState(() {
-      selectedIds = fixtures.map((f) => f.id).where((id) => id.isOdd).toList();
-    });
+    _setSelectedIds(fixtures.map((f) => f.id).where((id) => id.isOdd).toList());
   }
 
   _clear() {
-    setState(() => selectedIds = []);
+    _setSelectedIds([]);
+  }
+
+  _setSelectedIds(List<int> ids) {
+    setState(() {
+      selectedIds = ids;
+      context.read<ProgrammerApi>().selectFixtures(ids);
+    });
   }
 }
 
@@ -109,35 +116,45 @@ class FixtureTable extends StatelessWidget {
   final List<Fixture> fixtures;
   final List<int> selectedIds;
   final Function(int, bool) onSelect;
+  final Function(Fixture) onSelectSimilar;
 
   const FixtureTable(
-      {@required this.fixtures, @required this.selectedIds, @required this.onSelect, Key key})
+      {@required this.fixtures,
+      @required this.selectedIds,
+      @required this.onSelect,
+      this.onSelectSimilar,
+      Key key})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return DataTable(
-        showCheckboxColumn: false,
+    return SingleChildScrollView(
+      child: MizerTable(
         columns: const [
-          DataColumn(label: Text("Id")),
-          DataColumn(label: Text("Manufacturer")),
-          DataColumn(label: Text("Model")),
-          DataColumn(label: Text("Mode")),
-          DataColumn(label: Text("Address"))
+          Text("Id"),
+          Text("Manufacturer"),
+          Text("Model"),
+          Text("Mode"),
+          Text("Address")
         ],
         rows: fixtures
             .sortedByCompare((fixture) => fixture.id, (lhs, rhs) => lhs - rhs)
-            .map((fixture) => DataRow(
-                    cells: [
-                      DataCell(Text(fixture.id.toString())),
-                      DataCell(Text(fixture.manufacturer)),
-                      DataCell(Text(fixture.name)),
-                      DataCell(Text(fixture.mode)),
-                      DataCell(Text("${fixture.universe}:${fixture.channel}"))
-                    ],
-                    onSelectChanged: (selected) => onSelect(fixture.id, selected),
-                    selected: selectedIds.contains(fixture.id)))
-            .toList());
+            .map((fixture) {
+          var selected = selectedIds.contains(fixture.id);
+          return MizerTableRow(
+            cells: [
+              Text(fixture.id.toString()),
+              Text(fixture.manufacturer),
+              Text(fixture.name),
+              Text(fixture.mode),
+              Text("${fixture.universe}:${fixture.channel}")
+            ],
+            onTap: () => onSelect(fixture.id, !selected),
+            onDoubleTap: () => onSelectSimilar(fixture),
+            selected: selected,
+          );
+        }).toList()),
+    );
   }
 }
 
