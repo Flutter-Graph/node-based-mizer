@@ -68,6 +68,35 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+fn main() -> anyhow::Result<()> {
+    let artifact = Artifact::new()?;
+    artifact.link("mizer.exe")?;
+    artifact.link("data")?;
+    artifact.link("lib")?;
+    artifact.link_to("mizer_ui_ffi.dll", "lib/mizer_ui_ffi.dll")?;
+    artifact.link_source(
+        "components/fixtures/open-fixture-library/.fixtures",
+        "fixtures/open-fixture-library",
+    )?;
+    artifact.link_source("components/fixtures/qlcplus/.fixtures", "fixtures/qlcplus")?;
+    artifact.link_source("components/fixtures/gdtf/.fixtures", "fixtures/gdtf")?;
+    artifact.link_source(
+        "components/connections/protocols/midi/device-profiles/profiles",
+        "device-profiles/midi",
+    )?;
+    artifact.copy_settings("settings.toml", |settings| {
+        settings.paths.midi_device_profiles = PathBuf::from("device-profiles\\midi");
+        settings.paths.fixture_libraries.open_fixture_library =
+            Some(PathBuf::from("fixtures\\open-fixture-library"));
+        settings.paths.fixture_libraries.qlcplus = Some(PathBuf::from("fixtures\\qlcplus"));
+        settings.paths.fixture_libraries.qlcplus = Some(PathBuf::from("fixtures\\qlcplus"));
+        settings.paths.fixture_libraries.gdtf = Some(PathBuf::from("fixtures\\gdtf"));
+    })?;
+
+    Ok(())
+}
+
 fn build_dir(cwd: &Path) -> PathBuf {
     cwd.join("target/release")
 }
