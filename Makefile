@@ -15,6 +15,10 @@ build:
 
 build-release:
 	cd ui && make release
+	cargo build --features gst --release -p mizer
+
+build-release-no-gst:
+	cd ui && make release
 	cargo build --release -p mizer
 
 run: build

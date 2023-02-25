@@ -6,6 +6,7 @@ edition = "2021"
 
 [features]
 test = []
+gst = []
 
 [dependencies]
 anyhow = "1"

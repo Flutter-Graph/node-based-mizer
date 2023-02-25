@@ -52,12 +52,17 @@ pub trait NodeDowncast {
             NodeType::PixelDmx => Node::PixelDmx(self.downcast_node(node_type).unwrap()),
             NodeType::OscInput => Node::OscInput(self.downcast_node(node_type).unwrap()),
             NodeType::OscOutput => Node::OscOutput(self.downcast_node(node_type).unwrap()),
+            #[cfg(feature = "gst")]
             NodeType::VideoFile => Node::VideoFile(self.downcast_node(node_type).unwrap()),
+            #[cfg(feature = "gst")]
             NodeType::VideoColorBalance => {
                 Node::VideoColorBalance(self.downcast_node(node_type).unwrap())
             }
+            #[cfg(feature = "gst")]
             NodeType::VideoOutput => Node::VideoOutput(self.downcast_node(node_type).unwrap()),
+            #[cfg(feature = "gst")]
             NodeType::VideoEffect => Node::VideoEffect(self.downcast_node(node_type).unwrap()),
+            #[cfg(feature = "gst")]
             NodeType::VideoTransform => {
                 Node::VideoTransform(self.downcast_node(node_type).unwrap())
             }

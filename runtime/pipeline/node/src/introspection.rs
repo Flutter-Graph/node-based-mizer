@@ -18,10 +18,15 @@ pub enum NodeType {
     Clock,
     OscInput,
     OscOutput,
+    #[cfg(feature = "gst")]
     VideoFile,
+    #[cfg(feature = "gst")]
     VideoOutput,
+    #[cfg(feature = "gst")]
     VideoEffect,
+    #[cfg(feature = "gst")]
     VideoColorBalance,
+    #[cfg(feature = "gst")]
     VideoTransform,
     Scripting,
     PixelDmx,

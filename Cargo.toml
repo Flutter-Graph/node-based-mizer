@@ -95,6 +95,7 @@ license = "GNU AGPLv3"
 [features]
 default = ["ui"]
 ui = ["mizer-ui"]
+gst = ["gstreamer", "mizer-nodes/gst", "mizer-pipeline/gst", "mizer-runtime/gst", "mizer-api/gst"]
 tracing = ["profiling/profile-with-tracy", "mizer-util/tracing"]
 
 [dependencies]
@@ -106,7 +107,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 tracing-appender = "0.2"
 log = "0.4"
 anyhow = "1"
-gstreamer = "0.20"
+gstreamer = { version = "0.20", optional = true }
 structopt = "0.3"
 metrics = "0.20"
 mizer-media = { path = "components/media" }

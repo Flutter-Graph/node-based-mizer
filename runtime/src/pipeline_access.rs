@@ -95,10 +95,15 @@ impl PipelineAccess {
             PixelDmx(node) => self.add_node(path, node),
             OscInput(node) => self.add_node(path, node),
             OscOutput(node) => self.add_node(path, node),
+            #[cfg(feature = "gst")]
             VideoFile(node) => self.add_node(path, node),
+            #[cfg(feature = "gst")]
             VideoTransform(node) => self.add_node(path, node),
+            #[cfg(feature = "gst")]
             VideoColorBalance(node) => self.add_node(path, node),
+            #[cfg(feature = "gst")]
             VideoEffect(node) => self.add_node(path, node),
+            #[cfg(feature = "gst")]
             VideoOutput(node) => self.add_node(path, node),
             MidiInput(node) => self.add_node(path, node),
             MidiOutput(node) => self.add_node(path, node),

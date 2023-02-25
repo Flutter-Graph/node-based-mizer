@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Max Jöhnk <maxjoehnk@gmail.com>"]
 edition = "2021"
 
+[features]
+gst = []
+
 [dependencies]
 anyhow = "1"
 crossbeam = "0.8"

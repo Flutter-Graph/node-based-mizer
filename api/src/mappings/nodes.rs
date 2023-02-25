@@ -37,10 +37,15 @@ impl From<mizer_nodes::Node> for node_config::Type {
             PixelDmx(dmx) => Self::PixelDmxConfig(dmx.into()),
             OscInput(osc) => Self::OscInputConfig(osc.into()),
             OscOutput(osc) => Self::OscOutputConfig(osc.into()),
+            #[cfg(feature = "gst")]
             VideoFile(file) => Self::VideoFileConfig(file.into()),
+            #[cfg(feature = "gst")]
             VideoColorBalance(color_balance) => Self::VideoColorBalanceConfig(color_balance.into()),
+            #[cfg(feature = "gst")]
             VideoOutput(output) => Self::VideoOutputConfig(output.into()),
+            #[cfg(feature = "gst")]
             VideoEffect(effect) => Self::VideoEffectConfig(effect.into()),
+            #[cfg(feature = "gst")]
             VideoTransform(transform) => Self::VideoTransformConfig(transform.into()),
             ColorRgb(node) => Self::ColorRgbConfig(node.into()),
             ColorHsv(node) => Self::ColorHsvConfig(node.into()),
@@ -100,12 +105,17 @@ impl From<node_config::Type> for mizer_nodes::Node {
             node_config::Type::PixelDmxConfig(dmx) => Self::PixelDmx(dmx.into()),
             node_config::Type::OscInputConfig(osc) => Self::OscInput(osc.into()),
             node_config::Type::OscOutputConfig(osc) => Self::OscOutput(osc.into()),
+            #[cfg(feature = "gst")]
             node_config::Type::VideoFileConfig(file) => Self::VideoFile(file.into()),
+            #[cfg(feature = "gst")]
             node_config::Type::VideoColorBalanceConfig(color_balance) => {
                 Self::VideoColorBalance(color_balance.into())
             }
+            #[cfg(feature = "gst")]
             node_config::Type::VideoOutputConfig(output) => Self::VideoOutput(output.into()),
+            #[cfg(feature = "gst")]
             node_config::Type::VideoEffectConfig(effect) => Self::VideoEffect(effect.into()),
+            #[cfg(feature = "gst")]
             node_config::Type::VideoTransformConfig(transform) => {
                 Self::VideoTransform(transform.into())
             }
@@ -130,6 +140,14 @@ impl From<node_config::Type> for mizer_nodes::Node {
             node_config::Type::ConditionalConfig(node) => Self::Conditional(node.into()),
             node_config::Type::TimecodeControlConfig(node) => Self::TimecodeControl(node.into()),
             node_config::Type::TimecodeOutputConfig(node) => Self::TimecodeOutput(node.into()),
+            #[cfg(not(feature = "gst"))]
+            node_config::Type::VideoFileConfig(_)
+            | node_config::Type::VideoColorBalanceConfig(_)
+            | node_config::Type::VideoOutputConfig(_)
+            | node_config::Type::VideoEffectConfig(_)
+            | node_config::Type::VideoTransformConfig(_) => {
+                unimplemented!("gst nodes are not available")
+            }
         }
     }
 }
@@ -839,6 +857,7 @@ impl From<mizer_nodes::OscArgumentType> for osc_node_config::ArgumentType {
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<mizer_nodes::VideoFileNode> for VideoFileNodeConfig {
     fn from(node: mizer_nodes::VideoFileNode) -> Self {
         Self {
@@ -848,54 +867,63 @@ impl From<mizer_nodes::VideoFileNode> for VideoFileNodeConfig {
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<VideoFileNodeConfig> for mizer_nodes::VideoFileNode {
     fn from(node: VideoFileNodeConfig) -> Self {
         Self { file: node.file }
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<mizer_nodes::VideoColorBalanceNode> for VideoColorBalanceNodeConfig {
     fn from(_: mizer_nodes::VideoColorBalanceNode) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<VideoColorBalanceNodeConfig> for mizer_nodes::VideoColorBalanceNode {
     fn from(_: VideoColorBalanceNodeConfig) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<mizer_nodes::VideoOutputNode> for VideoOutputNodeConfig {
     fn from(_: mizer_nodes::VideoOutputNode) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<VideoOutputNodeConfig> for mizer_nodes::VideoOutputNode {
     fn from(_: VideoOutputNodeConfig) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<mizer_nodes::VideoEffectNode> for VideoEffectNodeConfig {
     fn from(_: mizer_nodes::VideoEffectNode) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<VideoEffectNodeConfig> for mizer_nodes::VideoEffectNode {
     fn from(_: VideoEffectNodeConfig) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<mizer_nodes::VideoTransformNode> for VideoTransformNodeConfig {
     fn from(_: mizer_nodes::VideoTransformNode) -> Self {
         Default::default()
     }
 }
 
+#[cfg(feature = "gst")]
 impl From<VideoTransformNodeConfig> for mizer_nodes::VideoTransformNode {
     fn from(_: VideoTransformNodeConfig) -> Self {
         Default::default()
@@ -1515,10 +1543,15 @@ impl From<NodeType> for node::NodeType {
             NodeType::Clock => node::NodeType::Clock,
             NodeType::OscInput => node::NodeType::OscInput,
             NodeType::OscOutput => node::NodeType::OscOutput,
+            #[cfg(feature = "gst")]
             NodeType::VideoFile => node::NodeType::VideoFile,
+            #[cfg(feature = "gst")]
             NodeType::VideoOutput => node::NodeType::VideoOutput,
+            #[cfg(feature = "gst")]
             NodeType::VideoEffect => node::NodeType::VideoEffect,
+            #[cfg(feature = "gst")]
             NodeType::VideoColorBalance => node::NodeType::VideoColorBalance,
+            #[cfg(feature = "gst")]
             NodeType::VideoTransform => node::NodeType::VideoTransform,
             NodeType::Scripting => node::NodeType::Script,
             NodeType::PixelDmx => node::NodeType::PixelToDmx,
@@ -1576,10 +1609,15 @@ impl From<node::NodeType> for NodeType {
             node::NodeType::Clock => NodeType::Clock,
             node::NodeType::OscInput => NodeType::OscInput,
             node::NodeType::OscOutput => NodeType::OscOutput,
+            #[cfg(feature = "gst")]
             node::NodeType::VideoFile => NodeType::VideoFile,
+            #[cfg(feature = "gst")]
             node::NodeType::VideoOutput => NodeType::VideoOutput,
+            #[cfg(feature = "gst")]
             node::NodeType::VideoEffect => NodeType::VideoEffect,
+            #[cfg(feature = "gst")]
             node::NodeType::VideoColorBalance => NodeType::VideoColorBalance,
+            #[cfg(feature = "gst")]
             node::NodeType::VideoTransform => NodeType::VideoTransform,
             node::NodeType::Script => NodeType::Scripting,
             node::NodeType::PixelToDmx => NodeType::PixelDmx,
@@ -1621,6 +1659,12 @@ impl From<node::NodeType> for NodeType {
             node::NodeType::Conditional => NodeType::Conditional,
             node::NodeType::TimecodeControl => NodeType::TimecodeControl,
             node::NodeType::TimecodeOutput => NodeType::TimecodeOutput,
+            #[cfg(not(feature = "gst"))]
+            node::NodeType::VideoFile
+            | node::NodeType::VideoOutput
+            | node::NodeType::VideoEffect
+            | node::NodeType::VideoColorBalance
+            | node::NodeType::VideoTransform => unimplemented!("node type is disabled via feature"),
         }
     }
 }

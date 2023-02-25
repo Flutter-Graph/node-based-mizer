@@ -32,6 +32,7 @@ pub use mizer_sequencer_nodes::SequencerNode;
 pub use mizer_timecode_nodes::{TimecodeControlNode, TimecodeOutputNode};
 pub use mizer_timing_nodes::DelayNode;
 pub use mizer_transport_nodes::TransportNode;
+#[cfg(feature = "gst")]
 pub use mizer_video_nodes::{
     VideoColorBalanceNode, VideoEffectNode, VideoFileNode, VideoOutputNode, VideoTransformNode,
 };
@@ -47,6 +48,16 @@ macro_rules! node_impl {
         #[serde(tag = "type", content = "config", rename_all = "kebab-case")]
         pub enum Node {
             $($node_type($node),)*
+            #[cfg(feature = "gst")]
+            VideoFile(VideoFileNode),
+            #[cfg(feature = "gst")]
+            VideoColorBalance(VideoColorBalanceNode),
+            #[cfg(feature = "gst")]
+            VideoOutput(VideoOutputNode),
+            #[cfg(feature = "gst")]
+            VideoEffect(VideoEffectNode),
+            #[cfg(feature = "gst")]
+            VideoTransform(VideoTransformNode),
             // TODO: should only be available in tests
             #[doc(hidden)]
             TestSink(TestSink),
@@ -56,6 +67,16 @@ macro_rules! node_impl {
             fn from(node_type: NodeType) -> Self {
                 match node_type {
                     $(NodeType::$node_type => <$node>::default().into(),)*
+                    #[cfg(feature = "gst")]
+                    NodeType::VideoFile => VideoFileNode::default().into(),
+                    #[cfg(feature = "gst")]
+                    NodeType::VideoColorBalance => VideoColorBalanceNode::default().into(),
+                    #[cfg(feature = "gst")]
+                    NodeType::VideoOutput => VideoOutputNode::default().into(),
+                    #[cfg(feature = "gst")]
+                    NodeType::VideoEffect => VideoEffectNode::default().into(),
+                    #[cfg(feature = "gst")]
+                    NodeType::VideoTransform => VideoTransformNode::default().into(),
                     NodeType::TestSink => unimplemented!(),
                 }
             }
@@ -65,6 +86,16 @@ macro_rules! node_impl {
             pub fn node_type(&self) -> NodeType {
                 match self {
                     $(Node::$node_type(_) => NodeType::$node_type,)*
+                    #[cfg(feature = "gst")]
+                    Node::VideoFile(_) => NodeType::VideoFile,
+                    #[cfg(feature = "gst")]
+                    Node::VideoColorBalance(_) => NodeType::VideoColorBalance,
+                    #[cfg(feature = "gst")]
+                    Node::VideoOutput(_) => NodeType::VideoOutput,
+                    #[cfg(feature = "gst")]
+                    Node::VideoEffect(_) => NodeType::VideoEffect,
+                    #[cfg(feature = "gst")]
+                    Node::VideoTransform(_) => NodeType::VideoTransform,
                     Node::TestSink(_) => NodeType::TestSink,
                 }
             }
@@ -89,7 +120,7 @@ macro_rules! node_impl {
             pub fn prepare(&mut self, injector: &Injector) {
                 match self {
                     $(Node::$node_type(node) => node.prepare(injector),)*
-                    Node::TestSink(_) => {},
+                    _ => {},
                 }
             }
         }
@@ -124,11 +155,6 @@ node_impl! {
     PixelDmx(PixelDmxNode),
     OscInput(OscInputNode),
     OscOutput(OscOutputNode),
-    VideoFile(VideoFileNode),
-    VideoColorBalance(VideoColorBalanceNode),
-    VideoOutput(VideoOutputNode),
-    VideoEffect(VideoEffectNode),
-    VideoTransform(VideoTransformNode),
     Gamepad(GamepadNode),
     ColorRgb(RgbColorNode),
     ColorHsv(HsvColorNode),

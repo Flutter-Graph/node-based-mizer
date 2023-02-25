@@ -6,6 +6,7 @@ edition = "2021"
 
 [features]
 default = []
+gst = ["mizer-runtime/gst", "mizer-node/gst", "mizer-nodes/gst"]
 
 [dependencies]
 anyhow = "1"

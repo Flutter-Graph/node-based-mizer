@@ -440,10 +440,15 @@ fn register_node(pipeline: &mut PipelineWorker, path: NodePath, node: Node) {
         Node::PixelDmx(node) => pipeline.register_node(path, &node),
         Node::OscInput(node) => pipeline.register_node(path, &node),
         Node::OscOutput(node) => pipeline.register_node(path, &node),
+        #[cfg(feature = "gst")]
         Node::VideoFile(node) => pipeline.register_node(path, &node),
+        #[cfg(feature = "gst")]
         Node::VideoColorBalance(node) => pipeline.register_node(path, &node),
+        #[cfg(feature = "gst")]
         Node::VideoOutput(node) => pipeline.register_node(path, &node),
+        #[cfg(feature = "gst")]
         Node::VideoEffect(node) => pipeline.register_node(path, &node),
+        #[cfg(feature = "gst")]
         Node::VideoTransform(node) => pipeline.register_node(path, &node),
         Node::ColorRgb(node) => pipeline.register_node(path, &node),
         Node::ColorHsv(node) => pipeline.register_node(path, &node),

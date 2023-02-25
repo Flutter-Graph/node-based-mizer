@@ -4,17 +4,20 @@ version = "0.1.0"
 authors = ["Max Jöhnk <maxjoehnk@gmail.com>"]
 edition = "2021"
 
+[features]
+gst = ["gstreamer", "mizer-video-nodes"]
+
 [dependencies]
 log = "0.4"
 anyhow = "1"
-gstreamer = "0.20"
+gstreamer = { version = "0.20", optional = true }
 metrics = "0.20"
 mizer-fixtures = { path = "../../components/fixtures" }
 mizer-protocol-laser = { path = "../../components/connections/protocols/laser" }
 mizer-project-files = { path = "../projects" }
 mizer-devices = { path = "../../components/connections/devices" }
 mizer-node = { path = "node" }
-mizer-video-nodes = { path = "nodes/video" }
+mizer-video-nodes = { path = "nodes/video", optional = true }
 mizer-clock = { path = "../clock" }
 mizer-ports = { path = "ports" }
 mizer-processing = { path = "../processing" }

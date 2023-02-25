@@ -102,6 +102,7 @@ impl PipelineWorker {
                     PortType::Laser => receivers.register::<Vec<LaserFrame>>(port_id, metadata),
                     PortType::Data => receivers.register::<StructuredData>(port_id, metadata),
                     PortType::Clock => receivers.register::<u64>(port_id, metadata),
+                    #[cfg(feature = "gst")]
                     PortType::Gstreamer => {}
                     port_type => log::debug!("TODO: implement port type {:?}", port_type),
                 }
@@ -182,6 +183,7 @@ impl PipelineWorker {
             PortType::Data => {
                 self.connect_memory_ports::<StructuredData>(link, source_meta, target_meta)
             }
+            #[cfg(feature = "gst")]
             PortType::Gstreamer => self.connect_gst_ports(link)?,
             _ => todo!(),
         }
@@ -202,6 +204,7 @@ impl PipelineWorker {
             PortType::Multi => self.disconnect_memory_ports::<Vec<f64>>(link),
             PortType::Laser => self.disconnect_memory_ports::<Vec<LaserFrame>>(link),
             PortType::Data => self.disconnect_memory_ports::<StructuredData>(link),
+            #[cfg(feature = "gst")]
             PortType::Gstreamer => self.disconnect_gst_ports(link),
             _ => unimplemented!(),
         }
@@ -253,6 +256,7 @@ impl PipelineWorker {
         }
     }
 
+    #[cfg(feature = "gst")]
     fn connect_gst_ports(&self, link: NodeLink) -> anyhow::Result<()> {
         let source = self.states.get(&link.source).expect("invalid source path");
         let target = self.states.get(&link.target).expect("invalid target path");
@@ -265,6 +269,7 @@ impl PipelineWorker {
         Ok(())
     }
 
+    #[cfg(feature = "gst")]
     fn disconnect_gst_ports(&mut self, link: &NodeLink) {
         let source = self.states.get(&link.source).expect("invalid source path");
         let target = self.states.get(&link.target).expect("invalid target path");
@@ -275,6 +280,7 @@ impl PipelineWorker {
         gst_source.unlink_from(gst_target);
     }
 
+    #[cfg(feature = "gst")]
     fn get_gst_node<'a>(
         &self,
         node_state: &'a Box<dyn Any>,
